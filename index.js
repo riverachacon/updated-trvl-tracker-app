@@ -24,15 +24,6 @@ let users = [
   { id: 2, name: "Jack", color: "powderblue" },
 ];
 
-db.query("SELECT id, name, color FROM users", (err, res) => {
-  if(err){
-    console.log("Error executing query", err.stack)
-  } else{
-    users = res.rows
-  }
-
-})
-
 async function getCurrentUser(){
   const data = await db.query(
     "SELECT * FROM users"
@@ -51,8 +42,13 @@ async function visitedCountries(){
     [currentUserId]
   )
   dataArray = data.rows
+  
+  let countryCodes = []
+  for(let i = 0; i < dataArray.length; i ++){
+    countryCodes.push(dataArray[i].country_code)
+  }
 
-  return dataArray
+  return countryCodes
 }
 
 app.get("/", async (req, res) => {
@@ -72,8 +68,11 @@ app.get("/", async (req, res) => {
 
 /* ADD COUNTRY */
 app.post("/add", async (req, res) => {
+
   console.log("/ADD CURRENTUSERID: ", currentUserId)
+
   let newCountry = req.body.country.slice(0, 1).toUpperCase() + req.body.country.slice(1, req.body.country.length).toLowerCase()
+
   console.log("NEW COUNTRY: ", newCountry)
 
 
@@ -86,18 +85,10 @@ app.post("/add", async (req, res) => {
       res.redirect("/")
 
     } catch (err) {
-      let totalCountries =  await getData()
-      console.log("TOTAL: ", totalCountries) 
-      console.log("E R R O R: ",err)
-      res.render("index.ejs", {error: "country already exists", total:  totalCountries.length, countries: totalCountries})
-      
+      console.log("INSERT country ERROR: ", err)
     }
-    
   } catch (err) {
-    let totalCountries =  await getData()
-    console.log("TOTAL: ", totalCountries) 
-    console.log("E R R O R: ",err)
-    res.render("index.ejs", {error: "Please specify the country again", total:  totalCountries.length, countries: totalCountries})
+    console.log("SELECT country ERROR: ",err)
 
   }
 
@@ -109,7 +100,7 @@ app.post("/add", async (req, res) => {
 app.post("/user", async (req, res) => {
   let memberId = req.body.user
   // console.log(memberId)
-  if (req.body.add === "new") {
+  if (req.body.add === "new") {// redirect to new.ejs for adding new member
     res.render("new.ejs")
     
   } else {
@@ -126,9 +117,13 @@ app.post("/user", async (req, res) => {
 /* ADD NEW MEMBER */
 app.post("/new", async (req, res) => {
 
+  let newMemberName = req.body.name
+  let newMemberColor = req.body.color
 
 
-
+  await db.query("INSERT INTO users (name, color) VALUES ($1, $2) RETURNING *", [newMemberName, newMemberColor])// using RETURNING to get the id from the new added member
+  
+  res.redirect("/")
 
 });
 
