@@ -107,52 +107,18 @@ app.post("/add", async (req, res) => {
 
 /* CHANGING USERS */
 app.post("/user", async (req, res) => {
-
-  const selectedUser = req.body.user
-  let dataArray = []// creating array to store data from DB from selected user
-  let userArray = [] // crating array to store info from selected user 
-  
-
+  let memberId = req.body.user
+  // console.log(memberId)
   if (req.body.add === "new") {
-    
     res.render("new.ejs")
-
+    
   } else {
-    try {
-      let data = await db.query(
-        "SELECT vc.user_id, vc.country_code, u.color FROM visited_countries vc JOIN users u ON vc.user_id = u.id WHERE vc.user_id = $1", 
-        [selectedUser]
-      )
-      dataArray = data.rows
-  
-      let countryCodes = []// to store only the country codes
-      for(let i = 0; i< dataArray.length; i ++){// loop to get all codes from selected member from DB
-        countryCodes.push(dataArray[i].country_code)
-      }
-  
-      let member = await db.query(
-        "SELECT id, name, color FROM users WHERE id = $1",
-        [selectedUser]
-      )
-      userArray = member.rows // info from selected member
-      currentUserId = userArray[0].id // updating page for current member
-  
-  
-      // console.log("COUNTRIES OF SELECTED MEMBER: ", countryCodes)
-      // console.log("COLOR OF SELECTED MEMBER: ", dataArray[0].color)
-      // console.log("USER ARRAY: ", userArray)
-      // console.log("CURRENT USER ID: ", currentUserId)
-  
-      res.render("index.ejs", {countries: countryCodes, users: users, total: countryCodes.length, color: userArray[0].color})
-    } catch (err) {
-      let totalCountries =  await getData()
-      console.log("TOTAL: ", totalCountries) 
-      console.log("E R R O R /USER: ",err)
-      res.render("index.ejs", {error: "/user ERROR", total:  totalCountries.length, countries: totalCountries})
-  
-      
-    }
+    currentUserId = memberId
+    res.redirect("/")
+    
   }
+
+  
   
 });
 
