@@ -17,7 +17,7 @@ db.connect();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-let currentUserId ;
+let currentUserId = 1
 
 let users = [
   { id: 1, name: "Angela", color: "teal" },
@@ -33,35 +33,37 @@ db.query("SELECT id, name, color FROM users", (err, res) => {
 
 })
 
+async function getCurrentUser(){
+  const data = await db.query(
+    "SELECT * FROM users"
+  )
+  users = data.rows
+  return users.find((user) => user.id == currentUserId)
+
+}
 
 
-async function getData(){
+async function visitedCountries(){
   let dataArray = []
 
-  let data = await db.query("SELECT user_id, country_code, color FROM visited_countries JOIN users ON user_id = users.id")
+  let data = await db.query(
+    "SELECT country_code FROM visited_countries JOIN users ON users.id = user_id WHERE user_id = $1", 
+    [currentUserId]
+  )
   dataArray = data.rows
 
-
   return dataArray
-
 }
 
 app.get("/", async (req, res) => {
 
-  try {
-    let data = await getData()
+  let user = await getCurrentUser()
+  let countries = await visitedCountries()
 
-    // console.log("DATA: ", data)
-    // console.log("USERS: ", users)
-    
+  console.log("/ USER: ", user)
+  console.log("/ COUNTRIES: ", countries)
 
-    res.render("index.ejs", {users: users, color: users[1].color, total: data.length, countries: data[2].country_code})
-    
-  } catch (error) {
-    console.error("Error executing query", err.stack);
-    res.status(500).send("Internal Server Error");
-    
-  }
+  res.render("index.ejs", {users: users, countries: countries, total: countries.length, color: user.color})
 
 
 })
@@ -111,39 +113,45 @@ app.post("/user", async (req, res) => {
   let userArray = [] // crating array to store info from selected user 
   
 
-  try {
-    let data = await db.query(
-      "SELECT vc.user_id, vc.country_code, u.color FROM visited_countries vc JOIN users u ON vc.user_id = u.id WHERE vc.user_id = $1", 
-      [selectedUser]
-    )
-    dataArray = data.rows
-
-    let countryCodes = []// to store only the country codes
-    for(let i = 0; i< dataArray.length; i ++){// loop to get all codes from selected member from DB
-      countryCodes.push(dataArray[i].country_code)
-    }
-
-    let member = await db.query(
-      "SELECT id, name, color FROM users WHERE id = $1",
-      [selectedUser]
-    )
-    userArray = member.rows // info from selected member
-    currentUserId = userArray[0].id
-
-
-    // console.log("COUNTRIES OF SELECTED MEMBER: ", countryCodes)
-    // console.log("COLOR OF SELECTED MEMBER: ", dataArray[0].color)
-    // console.log("USER ARRAY: ", userArray)
-    // console.log("CURRENT USER ID: ", currentUserId)
-
-    res.render("index.ejs", {countries: countryCodes, users: users, total: countryCodes.length, color: userArray[0].color})
-  } catch (err) {
-    let totalCountries =  await getData()
-    console.log("TOTAL: ", totalCountries) 
-    console.log("E R R O R /USER: ",err)
-    res.render("index.ejs", {error: "/user ERROR", total:  totalCountries.length, countries: totalCountries})
-
+  if (req.body.add === "new") {
     
+    res.render("new.ejs")
+
+  } else {
+    try {
+      let data = await db.query(
+        "SELECT vc.user_id, vc.country_code, u.color FROM visited_countries vc JOIN users u ON vc.user_id = u.id WHERE vc.user_id = $1", 
+        [selectedUser]
+      )
+      dataArray = data.rows
+  
+      let countryCodes = []// to store only the country codes
+      for(let i = 0; i< dataArray.length; i ++){// loop to get all codes from selected member from DB
+        countryCodes.push(dataArray[i].country_code)
+      }
+  
+      let member = await db.query(
+        "SELECT id, name, color FROM users WHERE id = $1",
+        [selectedUser]
+      )
+      userArray = member.rows // info from selected member
+      currentUserId = userArray[0].id // updating page for current member
+  
+  
+      // console.log("COUNTRIES OF SELECTED MEMBER: ", countryCodes)
+      // console.log("COLOR OF SELECTED MEMBER: ", dataArray[0].color)
+      // console.log("USER ARRAY: ", userArray)
+      // console.log("CURRENT USER ID: ", currentUserId)
+  
+      res.render("index.ejs", {countries: countryCodes, users: users, total: countryCodes.length, color: userArray[0].color})
+    } catch (err) {
+      let totalCountries =  await getData()
+      console.log("TOTAL: ", totalCountries) 
+      console.log("E R R O R /USER: ",err)
+      res.render("index.ejs", {error: "/user ERROR", total:  totalCountries.length, countries: totalCountries})
+  
+      
+    }
   }
   
 });
@@ -154,7 +162,7 @@ app.post("/new", async (req, res) => {
 
 
 
-  res.render("new.ejs")
+
 
 });
 

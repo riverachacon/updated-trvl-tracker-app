@@ -6,8 +6,8 @@ The Travel Tracker app helps you keep track of countries you've visited. You can
 ## features:
 
 - Add and track visited countries.
-- Switch between family members to see their visited countries.
-- Add new family members.
+- Switch between members to see their visited countries.
+- Add new members.
 
 ## Technologies Used:
 
